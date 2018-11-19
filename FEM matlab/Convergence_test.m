@@ -4,22 +4,25 @@ clear; close all; clc
 %f = [0,0.05,0.1,0.15,0.2,0.25,0.3,0.35];
 f = 0:0.025:pi/4;
 E_t  = 2230.6;
-
-for i = 1:length(f)
-
-
-[res,E_unitCell(i),nu_unitCell(i),sigma_max_Q,n_elems_Q] = FEM_master(f(i),'Q4iso',18,18,false);
-
+ElmType = {'LSTiso','Q4iso'};
+for j = 1:length(ElmType)
+    for i = 1:length(f)
+    
+        [res,E_unitCell(i,j),nu_unitCell(i,j),sigma_max_Q,n_elems_Q] = FEM_master(f(i),ElmType{j},18,18,false);
+        
+    end
 end
 subplot(2,1,1)
-plot(f,E_unitCell/E_t)
+plot(f,E_unitCell(:,1)/E_t,'r',f,E_unitCell(:,2)/E_t)
 xlabel('Porosity')
 ylabel('Youngs modulus')
+legend({ElmType{1},ElmType{2}},'FontSize',13)
+
 subplot(2,1,2)
-plot(f,nu_unitCell)
+plot(f,nu_unitCell(:,1),'r',f,nu_unitCell(:,2))
 xlabel('Porosity')
 ylabel('Poissons ratio')
-
+legend({ElmType{1},ElmType{2}},'FontSize',13)
 %% Convergence test
 
 

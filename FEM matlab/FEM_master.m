@@ -161,7 +161,7 @@ else % Triangular element
     for i = 1:3
         [B,J_det] = BmatMaster(meshType,x_vec,y_vec,Int_points(i,1),Int_points(i,2));
         
-        k = k + B'*Em*B*h*(1/2)*abs(J_det)*GPW(i)^2;
+        k = k + B'*Em*B*h*(1/2)*abs(J_det)*GPW(i);
     end
 end
 end
@@ -319,10 +319,12 @@ function res = post_process(elems,nodes,D,Em,meshType)
             scale = sqrt(3);
         elseif strcmp(meshType,'CSTiso') || strcmp(meshType,'LSTiso')
            
-           
-           c = [1/2,0;
-               0,1/2;
-               1/2,1/2];
+           c = [0,0;
+               1/2,0;
+               1,0;
+               1/2,1/2;
+               0,1;
+               0,1/2];
            scale = 1;
         end
             
