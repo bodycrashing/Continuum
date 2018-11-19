@@ -29,6 +29,7 @@ syms x1 x2 x3 x4 x5 x6 y1 y2 y3 y4 y5 y6 x y
 %s = [y1 y2 y3 y4 y5 y6].';
 
 c = [x1 x2 x3 x4 x5 x6;y1 y2 y3 y4 y5 y6].';
+d = reshape(c.',1,12);
 
 syms r s
 
@@ -42,12 +43,25 @@ N6 = 4*s*(1-r-s);
 
 N = [N1,N2,N3,N4,N5,N6];
 
-N_diff = [diff(N,r);diff(N,s)];
+N_diff = sym(zeros(3,12));
 
-J = N_diff*c;
+N_diff(1,1:2:12) = diff(N,r);
+N_diff(3,2:2:12) = diff(N,r);
+N_diff(2,2:2:12) = diff(N,s);
+N_diff(3,1:2:12) = diff(N,s);
+
+N_diff_square = [diff(N,r);diff(N,s)];
+
+J = N_diff_square*c;
 
 J_inv = inv(J);
 
-B = J_inv*N_diff;
+B = J_inv*N_diff_square;
 
+B3 = 1/det(J) * simplify(B*det(J))
+
+simplify(B*det(J))
+
+
+B2 = (1/det(J)) * N_diff;
 
