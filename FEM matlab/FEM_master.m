@@ -5,7 +5,7 @@ function [res,E_unitCell,nu_unitCell,SigmaVM_max,n_elems] = FEM_master(f,meshTyp
 
 %% %%%%%%%%%%%%%%%%%% define model %%%%%%%%%%%%%%%%%%%%%%%%%
 W  = 0.5;        % Unit zell widht and height [mm]
-rad  = sqrt(f/pi);        % Radius of hole [mm]
+rad  = sqrt(f/(pi));        % Radius of hole [mm]
 h  = 1;         % model thickness
 
 %meshType = 'Q4iso';
@@ -70,13 +70,13 @@ K = global_stiffness_matrix(elems,nodes,Em,h,ndof,nGP,meshType);
 res = post_process(elems,nodes,D,Em,meshType);
 
 F_res = sum(R(find(nodes(:,2) == W)*2));
+
 D_y = (D(find(nodes(:,1) == W,1)*2-1));
 
 E_unitCell = (F_res)/(D_forced);
 
-E_unitCell = E_unitCell/(1+3*f);
-
 nu_unitCell = -D_y/D_forced;
+
 
 for i = 1:length(res.element)  
     Sig(:,i) = res.element(i).Se;   
@@ -152,16 +152,22 @@ if mod(length(x_vec),3) ~= 0 %Rectangular element
     end
     
 else % Triangular element
-    Int_points = [2/3,1/6;1/6,1/6;1/6,2/3];
-    GPW = [1/3,1/3,1/3];
+    Int_points = [2/3, 1/6
+                  1/6, 1/6
+                  1/6, 2/3];
+              
+    GPW = [1/3, 1/3, 1/3];
     
     for i = 1:3
         [B,J_det] = BmatMaster(meshType,x_vec,y_vec,Int_points(i,1),Int_points(i,2));
         
-        k = k + B'*Em*B*h*(1/2)*abs(J_det)*GPW(i)*GPW(i);
+        k = k + B'*Em*B*h*(1/2)*abs(J_det)*GPW(i)^2;
     end
 end
 end
+
+
+
 
 function K = global_stiffness_matrix(elems,nodes,Em,h,ndof,nGP,meshType)
 % Assembles the global/structure stiffeness matrix K from element stiffness matrices
@@ -186,19 +192,14 @@ K = zeros(ndof,ndof);
 for i = 1:size(elems,1)
     nod = elems(i,:);
     
-    x_vec=nodes(nod,1);
-    y_vec=nodes(nod,2);
-    
-    
+    x_vec = nodes(nod,1);
+    y_vec = nodes(nod,2);
+     
     dof_x = nod*2-1;
     dof_y = nod*2;
-    
     dof = reshape([dof_x;dof_y],1,[]);
     
-    
-    
     k = k_elem(x_vec,y_vec,Em,h,nGP,meshType);
-    
     
     K(dof,dof) = K(dof,dof) + k;
     
@@ -228,9 +229,6 @@ GP = zeros(nGP,1);
 
 GP(:) = GP_l(nGP,1:nGP);
 GPW = w_l(nGP,1:nGP);
-
-
-
 end
 
 function [D,R] = solve(K,R,BC,Dconstrains,C)
@@ -277,19 +275,18 @@ R(BC) = Rx;
 end
 
 function C = multi_constraints(elems,nodes,MC)
-
 test = [1 0 -1];
 ndof = length(nodes)*2;
 C = zeros(sum(MC)-1,ndof);
-
-for i = 1:sum(MC)-1
-    
-    C(i,(i*2-1:i*2+1)) = test;
+        
+    for i = 1:sum(MC)-1       
+        C(i,(i*2-1:i*2+1)) = test;        
+    end
     
 end
 
 
-end
+
 
 function res = post_process(elems,nodes,D,Em,meshType)
 
@@ -321,12 +318,11 @@ function res = post_process(elems,nodes,D,Em,meshType)
                -1  1];
             scale = sqrt(3);
         elseif strcmp(meshType,'CSTiso') || strcmp(meshType,'LSTiso')
-           c = [0,0;
-               1,0;
-               0,1;
-               1/2,0;
-               1/2,1/2;
-               0,1/2];
+           
+           
+           c = [1/2,0;
+               0,1/2;
+               1/2,1/2];
            scale = 1;
         end
             
@@ -381,8 +377,6 @@ function res = post_process(elems,nodes,D,Em,meshType)
         
     end
 
-    
-    
     for j = 1:max(elems(:)) % Looping over number of nodes
     [elem_nr,node_pos]=find(elems==j); % Finding element nr and pos for each node
     node_stresses = [];
@@ -414,6 +408,10 @@ function res = post_process(elems,nodes,D,Em,meshType)
     res.Em  = Em;
 
 end
+
+
+
+
 
 function R = element_loads(poly,elems,nodes,h,W,nGP)
 % !!!!!!!!!!! THIS FUNCTION ONLY WORK ON Q4 !!!!!!!!!!

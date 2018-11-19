@@ -1,30 +1,31 @@
-% FE program for MEFEM class: 2D plane stress Q4 elements
-% MMP, rev. 4, 26/9-2018.
-clc; clear all; close all;
+function [res,E_unitCell,nu_unitCell,SigmaVM_max,n_elems] = FEM_master(f,meshType,nc,no,plotTF)
+%FE program for MEFEM class: 2D plane stress Q4 elements
+
+%clc; clear all; close all;
 
 %% %%%%%%%%%%%%%%%%%% define model %%%%%%%%%%%%%%%%%%%%%%%%%
-W  = 10;        % Unit zell widht and height [mm]
-R  = 5;        % Radius of hole [mm]
+W  = 0.5;        % Unit zell widht and height [mm]
+rad  = sqrt(f/(pi));        % Radius of hole [mm]
 h  = 1;         % model thickness
 
-meshType = 'Q4iso';
+%meshType = 'Q4iso';
 %meshType = 'LSTiso';
 %meshType = 'CSTiso';
 
-nc = 16;         % no. elements in on hole curve
-no = 16;         % no. elements in allong diagonal of hole curve
+%nc = 16;         % no. elements in on hole curve
+%no = 16;         % no. elements in allong diagonal of hole curve
 % nc MUST!! be even numbers
 nGP = 2;        % no. Gauss points
 
 E  = 2230.6;    % Youngs modulus
 nu = 0.355;       % Poissons ratio
 
-D_forced = 1; %Forced displacement [mm]
+D_forced = 0.1; %Forced displacement [mm]
 
 %% %%%%%%%% Generate Mesh, Constraints and Loads %%%%%%%%%%%%%%%%%%%%%%%
 
 % generate mesh (node and element tables)
-[nodes,elems,ndof] = MeshMaster(meshType,W,R,nc,no);
+[nodes,elems,ndof] = MeshMaster(meshType,W,rad,nc,no);
 %[nodes,elems,ndof] = ImportMesh('CST2_nodes.txt','CST2_elems.txt');
 %elems = elems(:,[2,3,1]);
 
@@ -34,14 +35,14 @@ MC = false(ndof,1);
 % fixed dofs (at x = 0 and y = 0), all others are free
 BC(find(nodes(:,1) == 0)*2-1) = 1; % Left side nodes
 BC(find(nodes(:,2) == 0)*2) = 1; % Bottom nodes
-BC(find(nodes(:,1) == W)*2-1) = 1; % Right side nodes
+%BC(find(nodes(:,1) == W)*2-1) = 1; % Right side nodes
 BC(find(nodes(:,2) == W)*2) = 1; % Top nodes
 % Forced displacements
 Dc = zeros(ndof,1);
 Dc(find(nodes(:,2) == W)*2) = D_forced;
 
 % Multivariable constraints
-MC(find(nodes(:,1) == W)*2-1) = 0; % =1 if on
+MC(find(nodes(:,1) == W)*2-1) = 1; % =1 if on
 C = multi_constraints(elems,nodes,MC);
 
 % Line load at top of unit cell. Value in N/mm2
@@ -66,22 +67,30 @@ K = global_stiffness_matrix(elems,nodes,Em,h,ndof,nGP,meshType);
 [D,R] = solve(K,R,BC,Dc,C);
 
 % Calculating stresses in the elements
-[eps,sigma_val] = StressCal(elems,nodes,D,E,meshType);
-
-res = post_process(elems,nodes,D,Em)
+res = post_process(elems,nodes,D,Em,meshType);
 
 F_res = sum(R(find(nodes(:,2) == W)*2));
+
 D_y = (D(find(nodes(:,1) == W,1)*2-1));
 
-E_unitCell = (F_res*W)/(W*D_forced);
+E_unitCell = (F_res)/(W * D_forced);
 
 nu_unitCell = -D_y/D_forced;
 
+
+for i = 1:length(res.element)  
+    Sig(:,i) = res.element(i).Se;   
+end
+SigmaVM_max = max(Sig(:));
+
+n_elems = length(elems);
 
 
 %% %%%%%%%%%%%%%%%%%%%% plot model %%%%%%%%%%%%%%%%%%%%%%%%%%
 % Print 
 %print_nodal_results(D,R,BC) % show results command window
+
+if plotTF
 
 % Model Plot
 % (comment out what you don't need)
@@ -97,12 +106,14 @@ plot_loads(nodes,P)
 %plot_dist_load(elems,nodes,poly,W)
 plot_reaction_forces(nodes,D,R,BC)
 
-% Results Plot
-plot_stress(elems,nodes,sigma_val)
 figure()
-plot_displacement(elems,nodes,D,'mesh') %last argument: 'UX', 'UY', 'U' or 'mesh'
-
+% Results Plot
 plot_results(elems,nodes,res,'Se')
+
+%figure()
+%plot_displacement(elems,nodes,D,'mesh') %last argument: 'UX', 'UY', 'U' or 'mesh'
+
+end
 
 
 
@@ -125,7 +136,7 @@ k = zeros(length(x_vec)*2);
 % If statement determines if triangle or square element
 if mod(length(x_vec),3) ~= 0 %Rectangular element
     % Get Gauss points and weights
-    [GP,W] = Gauss(nGP);
+    [GP,GPW] = Gauss(nGP);
 
     for i = 1:nGP    
         for j = 1:nGP
@@ -136,21 +147,27 @@ if mod(length(x_vec),3) ~= 0 %Rectangular element
             % Evaluating the B matrix at xi and eta       
             [B,J_det] = BmatMaster(meshType,x_vec,y_vec,xi,eta);
 
-            k = k + B'*Em*B*h*abs(J_det)*W(i)*W(j);
+            k = k + B'*Em*B*h*abs(J_det)*GPW(i)*GPW(j);
         end
     end
     
 else % Triangular element
-    Int_points = [2/3,1/6;1/6,1/6;1/6,2/3];
-    W = [1/3,1/3,1/3];
+    Int_points = [2/3, 1/6
+                  1/6, 1/6
+                  1/6, 2/3];
+              
+    GPW = [1/3, 1/3, 1/3];
     
     for i = 1:3
         [B,J_det] = BmatMaster(meshType,x_vec,y_vec,Int_points(i,1),Int_points(i,2));
         
-        k = k + B'*Em*B*h*(1/2)*abs(J_det)*W(i)*W(i);
+        k = k + B'*Em*B*h*(1/2)*abs(J_det)*GPW(i)^2;
     end
 end
 end
+
+
+
 
 function K = global_stiffness_matrix(elems,nodes,Em,h,ndof,nGP,meshType)
 % Assembles the global/structure stiffeness matrix K from element stiffness matrices
@@ -175,19 +192,14 @@ K = zeros(ndof,ndof);
 for i = 1:size(elems,1)
     nod = elems(i,:);
     
-    x_vec=nodes(nod,1);
-    y_vec=nodes(nod,2);
-    
-    
+    x_vec = nodes(nod,1);
+    y_vec = nodes(nod,2);
+     
     dof_x = nod*2-1;
     dof_y = nod*2;
-    
     dof = reshape([dof_x;dof_y],1,[]);
     
-    
-    
     k = k_elem(x_vec,y_vec,Em,h,nGP,meshType);
-    
     
     K(dof,dof) = K(dof,dof) + k;
     
@@ -195,7 +207,7 @@ end
 
 end
 
-function [GP,W] = Gauss(nGP)
+function [GP,GPW] = Gauss(nGP)
 % Returns sampling points and weights for Gauss quadrature of order nGP
 % Cook, Table 6.3-1
 % INPUTS:
@@ -216,7 +228,7 @@ GP_l = [0,0,0;
 GP = zeros(nGP,1);
 
 GP(:) = GP_l(nGP,1:nGP);
-W = w_l(nGP,1:nGP);
+GPW = w_l(nGP,1:nGP);
 
 
 
@@ -265,87 +277,20 @@ R(BC) = Rx;
 
 end
 
-function C = multi_constraints(elems,nodes,MC)
 
+function C = multi_constraints(elems,nodes,MC)
 test = [1 0 -1];
 ndof = length(nodes)*2;
 C = zeros(sum(MC)-1,ndof);
-
-for i = 1:sum(MC)-1
-    
-    C(i,(i*2-1:i*2+1)) = test;
-    
-end
-
-
-end
-
-function [eps,sigma_val] = StressCal(elems,nodes,D,E,meshType)
-% Calculating stresses in the elements
-% D = Displacements
-% E = Modulus of elasticity
-% Output:
-% eps = 3rd order tensor containing strains. 
-%   First index = strain type [e_x, e_y, e_xy] . Values from 1 to 3
-%   Second index = node number in element. 1 to 4
-%   Third index = element number. 1 to number of elements
-
-for i = 1:size(elems,1) % Looping over number of elements
-    
-    % Calculating dof belonging to current element
-    nod = elems(i,:);
-    dof_x = nod*2-1;
-    dof_y = nod*2;    
-    dof = reshape([dof_x;dof_y],1,[]);
-    % Fetching displacements belonging to current element
-    d = D(dof);
-    % Getting x and y coordinates for element nodes
-    x_vec=nodes(nod,1);
-    y_vec=nodes(nod,2); 
-    
-    if strcmp(meshType,'Q4iso')
-    xi = [-1 1 1 -1];
-    eta = [-1 -1 1 1];
-    elseif strcmp(meshType,'CSTiso') || strcmp(meshType,'LSTiso')
-        %xi = [2/3;1/6;1/6];
-        %eta = [1/6;1/6;2/3];
-        xi =[0,1,0,1/2,1/2,0];
-        eta =[0,0,1,0,1/2,1/2];
-    end
-    % Looping over number of nodes pr element
-        Int_points = [2/3,1/6;1/6,1/6;1/6,2/3];
-        W = [1/3,1/3,1/3];
-    for j = 1:size(elems,2) 
-        % Evaluating B at node position  
-        %B =  BmatMaster(meshType,x_vec,y_vec,xi(j),eta(j));
-        [B,~,N] =  BmatMaster(meshType,x_vec,y_vec,xi(j),eta(j));
-        % Calculating stresses and strains
         
-        eps(:,j,i) = B*d;
-        sigma_val(:,j,i) = E*eps(:,j,i);
-        
+    for i = 1:sum(MC)-1       
+        C(i,(i*2-1:i*2+1)) = test;        
     end
+    
 end
 
-% Stress averaging
-%
-for j = 1:max(elems(:)) % Looping over number of nodes
-    [elem_nr,node_pos]=find(elems==j); % Finding element nr and pos for each node
-    node_stresses = [];
-    for i = 1:length(elem_nr)
-        % Finding stresses for the node
-        node_stresses(:,i) =  sigma_val(:,node_pos(i),elem_nr(i));
-    end
-    % Averaging the stresses
-    node_stress_avg = mean(node_stresses(1:3,:),2);
-    % Inserting the stresses back in the global stress matrix
-    for i = 1:length(elem_nr)
-        sigma_val(:,node_pos(i),elem_nr(i)) = node_stress_avg ;
-    end
-end
-%
 
-end
+
 
 function res = post_process(elems,nodes,D,Em,meshType)
 
@@ -357,8 +302,11 @@ function res = post_process(elems,nodes,D,Em,meshType)
     for i = 1:ne
         
         % nodes and dof's for element i
-        n = elems(i,1:4);
-        dof = [2*n(1)-1 2*n(1) 2*n(2)-1 2*n(2) 2*n(3)-1 2*n(3) 2*n(4)-1 2*n(4)]';
+        n = elems(i,:);
+
+        dof_x = n*2-1;
+        dof_y = n*2;
+        dof = reshape([dof_x;dof_y],1,[])';
 
         d = D(dof); % element displacement vector
         
@@ -371,25 +319,40 @@ function res = post_process(elems,nodes,D,Em,meshType)
             c = [-1 -1;
                 1 -1;
                 1  1;
-                -1  1];
+               -1  1];
+            scale = sqrt(3);
         elseif strcmp(meshType,'CSTiso') || strcmp(meshType,'LSTiso')
-           c = [0,0]
-               
-                   xi =[0,1,0,1/2,1/2,0];
-        eta =[0,0,1,0,1/2,1/2];
+           c = [0,0;
+               1,0;
+               0,1;
+               1/2,0;
+               1/2,1/2;
+               0,1/2];
+           scale = 1;
         end
             
-            % loop over element nodes
-        for j = 1:4
+            % loop over element nodes        
+        for j = 1:size(elems,2)
             
             % evaluate B matrix at node j
             
-            B = BmatMaster('Q4iso',x,y,c(j,1),c(j,2));
+            [B,~,~] = BmatMaster(meshType,x,y,1/scale * c(j,1),1/scale * c(j,2));
             
             % calculate strain and stress the simple way:
             % (a better way is to extrapolate from the Gauss points)
-            eps   = B*d;            
-            sigma = Em*eps;
+            %eps   = B*d;            
+            %sigma = Em*eps;
+            epsGP(:,j)   = B*d;            
+            sigmaGP(:,j) = Em*epsGP(:,j);
+            
+        end
+   
+        for j = 1:size(elems,2)             
+            [~,~,N] = BmatMaster(meshType,x,y,scale*c(j,1),scale*c(j,2));
+            
+            eps = N*epsGP';
+            sigma = N*sigmaGP';
+            
             
             Sx  = sigma(1);
             Sy  = sigma(2);
@@ -419,6 +382,25 @@ function res = post_process(elems,nodes,D,Em,meshType)
         
     end
 
+    
+    
+    for j = 1:max(elems(:)) % Looping over number of nodes
+    [elem_nr,node_pos]=find(elems==j); % Finding element nr and pos for each node
+    node_stresses = [];
+    for i = 1:length(elem_nr)
+        % Finding stresses for the node
+        node_stresses(i) =  res.element(elem_nr(i)).Se(node_pos(i));
+    end
+    % Averaging the stresses
+    node_stress_avg = mean(node_stresses);
+    % Inserting the stresses back in the global stress matrix
+    for i = 1:length(elem_nr)
+        res.element(elem_nr(i)).Se(node_pos(i)) = node_stress_avg ;
+    end
+    end
+
+    
+    
     % extract and store pure nodal results also
     xdof = 1:2:(2*nn-1);
     ydof = 2:2:2*nn;
@@ -433,6 +415,8 @@ function res = post_process(elems,nodes,D,Em,meshType)
     res.Em  = Em;
 
 end
+
+
 
 
 
@@ -930,9 +914,15 @@ function plot_results(elems,nodes,res,plot_mode)
         case {'SX','SY','SXY','EX','EY','EXY' 'S1' 'S2' 'Se'} % element-based results
             for i=1:size(elems,1)
                 phi = eval(['res.element(i).' plot_mode]);
-                eface = 1:4;
-                n = elems(i,1:4);
+                eface = 1:size(elems,2);
+                n = elems(i,:);
                 enodes = nodes(n,:);
+                
+                if size(elems,2)==6
+                    enodes = enodes([1,4,2,5,3,6],:);
+                    phi = phi([1,4,2,5,3,6]);
+                end
+                
                 patch('faces',eface,'vertices',enodes,'facecolor','interp','FaceVertexCData',phi');
             end
        
@@ -945,4 +935,6 @@ function plot_results(elems,nodes,res,plot_mode)
         cb.Title.String = plot_mode;
     end
     
+end
+
 end
