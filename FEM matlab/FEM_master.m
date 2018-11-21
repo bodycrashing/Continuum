@@ -1,22 +1,27 @@
-function [res,E_unitCell,nu_unitCell,SigmaVM_max,n_elems] = FEM_master(f,meshType,nc,no,plotTF)
-%FE program for MEFEM class: 2D plane stress Q4 elements
+function [res,E_unitCell,nu_unitCell,SigmaVM_max,n_elems] = FEM_master(f,meshType,nc,no,plotTF,mesher)
+% f = porousity
+% meshType = Can be 'CSTiso', 'LSTiso', 'Q4iso'
+% nc = number of elements allong hole curve
+% no = number of elements allong symetry boundary
+% plotTF = true/false specifies if the function should create plots
+% Optional :
+% mesher = if mesher is different from meshType. This can be:
+% 'FuldPladeLST' or 'FuldPladeQ4'. 
 
-%clc; clear all; close all;
+% If no special mesher is defined:
+if nargin < 6 
+   mesher = meshType; 
+end
+
 
 %% %%%%%%%%%%%%%%%%%% define model %%%%%%%%%%%%%%%%%%%%%%%%%
 W  = 0.5;        % Unit zell widht and height [mm]
 rad  = sqrt(f/(pi));        % Radius of hole [mm]
 h  = 1;         % model thickness
 
-%meshType = 'Q4iso';
-%meshType = 'LSTiso';
-%meshType = 'CSTiso';
-
-%nc = 16;         % no. elements in on hole curve
-%no = 16;         % no. elements in allong diagonal of hole curve
-% nc MUST!! be even numbers
 nGP = 2;        % no. Gauss points
 
+% Material properties
 E  = 2230.6;    % Youngs modulus
 nu = 0.355;       % Poissons ratio
 
@@ -25,9 +30,7 @@ D_forced = 0.1; %Forced displacement [mm]
 %% %%%%%%%% Generate Mesh, Constraints and Loads %%%%%%%%%%%%%%%%%%%%%%%
 
 % generate mesh (node and element tables)
-[nodes,elems,ndof] = MeshMaster(meshType,W,rad,nc,no);
-%[nodes,elems,ndof] = ImportMesh('CST2_nodes.txt','CST2_elems.txt');
-%elems = elems(:,[2,3,1]);
+[nodes,elems,ndof] = MeshMaster(mesher,W,rad,nc,no);
 
 % set boundary conditions
 BC = false(ndof,1);
@@ -43,12 +46,8 @@ Dc(find(nodes(:,2) == W)*2) = D_forced;
 
 % Multivariable constraints
 MC(find(nodes(:,1) == W)*2-1) = 1; % =1 if on
+%MC(find(nodes(:,1) == -1.5)*2-1) = 1; % =1 if on
 C = multi_constraints(elems,nodes,MC);
-
-% Line load at top of unit cell. Value in N/mm2
-%poly = [50];
-% Calculate nodal lodas from line load
-%P = element_loads(poly,elems,nodes,h,W,nGP);
 
 P = zeros(ndof,1);
 R = P;
@@ -87,8 +86,6 @@ n_elems = length(elems);
 
 
 %% %%%%%%%%%%%%%%%%%%%% plot model %%%%%%%%%%%%%%%%%%%%%%%%%%
-% Print 
-%print_nodal_results(D,R,BC) % show results command window
 
 if plotTF
 
@@ -110,8 +107,8 @@ figure()
 % Results Plot
 plot_results(elems,nodes,res,'Se')
 
-%figure()
-%plot_displacement(elems,nodes,D,'mesh') %last argument: 'UX', 'UY', 'U' or 'mesh'
+figure()
+plot_displacement(elems,nodes,D,'mesh') %last argument: 'UX', 'UY', 'U' or 'mesh'
 
 end
 

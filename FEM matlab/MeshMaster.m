@@ -9,6 +9,11 @@ function [nodes,elems,ndof] = MeshMaster(type,W,R,nc,no)
 
 % Include mesh functions under suitable cases.
 switch type
+    case 'FuldPladeLST'
+        [nodes,elems,ndof] = ImportMesh('LSTPlate_nodes2.txt','LSTPlate_elems2.txt');
+    case 'FuldPladeQ4'
+         [nodes,elems,ndof] = ImportMesh('Q4Plate_nodes.txt','Q4Plate_elems.txt');
+        
     case 'Q4iso'
         s_increase = 1.3; % Speed which the superelipse becomse square
         % no. of dof's
@@ -78,7 +83,7 @@ switch type
         elems = fliplr(elems);
         elems =  elems(:,[3 4 1 2]);
         
-        
+       
     case 'Q8'
         disp('No Q8 function yet')
         
@@ -274,7 +279,7 @@ switch type
         nodes = nodes * W;
         ndof = 2*max(elems(:));
         
-        %[nodes,elems,ndof] = ImportMesh('LST_nodes.txt','LST_elems.txt');
+        
 end
 
 
