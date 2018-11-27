@@ -12,50 +12,53 @@ for j = 1:length(ElmType)
         
     end
 end
+%%
+figure
 subplot(2,1,1)
 plot(f,E_unitCell(:,1)/E_t,'r',f,E_unitCell(:,2)/E_t)
 xlabel('Porosity')
-ylabel('Youngs modulus')
+ylabel('Youngs modulus fraction')
 legend({ElmType{1},ElmType{2}},'FontSize',13)
 
 subplot(2,1,2)
-plot(f,nu_unitCell(:,1),'r',f,nu_unitCell(:,2))
+plot(f,nu_unitCell(:,1)/0.355,'r',f,nu_unitCell(:,2)/0.355)
 xlabel('Porosity')
-ylabel('Poissons ratio')
+ylabel('Poissons ratio fraction')
 legend({ElmType{1},ElmType{2}},'FontSize',13)
 %% Convergence test
 
 
-return
-f = 0.3;
+
+f = 0.4;
 meshType = 'Q4iso'
 for i = 1:10
 
     nc = i*4;
     no = nc;
      
-    [res,E_unitCell,nu_unitCell,sigma_max_Q(i),n_elems_Q(i)] = FEM_master(f,meshType,nc,no,false);
+    [res,E_unitCell,nu_unitCell,sigma_max_Q(i),n_elems_Q(i),eta_Q(i)] = FEM_master(f,meshType,nc,no,false);
 end
 
     meshType = 'CSTiso'
-for i = 1:10
+for i = 1:12
 
     nc = i*2;
     no = nc;
      
-    [res,E_unitCell,nu_unitCell,sigma_max_C(i),n_elems_C(i)] = FEM_master(f,meshType,nc,no,false);
+    [res,E_unitCell,nu_unitCell,sigma_max_C(i),n_elems_C(i),eta_C(i)] = FEM_master(f,meshType,nc,no,false);
 end
 
     meshType = 'LSTiso'
-for i = 1:6
+for i = 1:12
 
     nc = 2*i;
     no = nc;
      
-    [res,E_unitCell,nu_unitCell,sigma_max_L(i),n_elems_L(i)] = FEM_master(f,meshType,nc,no,false);
+    [res,E_unitCell,nu_unitCell,sigma_max_L(i),n_elems_L(i),eta_L(i)] = FEM_master(f,meshType,nc,no,false);
 end
 
 %%
+figure(2)
 semilogx(1./n_elems_Q(:),sigma_max_Q(:))
 hold on
 semilogx(1./n_elems_C(:),sigma_max_C(:))

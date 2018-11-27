@@ -938,7 +938,7 @@ end
         UX = res.nodal.UX;
         UY = res.nodal.UY;
         nodes = nodes + [UX UY];
-        
+        ax = axes();
         switch plot_mode
             case 'mesh' % just the deformed mesh
                 patch('faces',elems,'vertices',nodes,'facecolor','none');
@@ -959,10 +959,31 @@ end
                         phi = phi([1,4,2,5,3,6]);
                     end
                     
-                    patch('faces',eface,'vertices',enodes,'facecolor','interp','FaceVertexCData',phi');
+                    h(i) = patch('faces',eface,'vertices',enodes,'facecolor','interp','FaceVertexCData',phi',...
+                        'LineWidth' ,0.1);
                 end
                 
         end
+        
+        t1 = hgtransform('Parent',ax);
+        t2 = hgtransform('Parent',ax);
+        t3 = hgtransform('Parent',ax);
+        t4 = hgtransform('Parent',ax);
+        
+        set(h,'Parent',t1)
+        h2 = copyobj(h,t2);
+        h3 = copyobj(h,t3);
+        h4 = copyobj(h,t4);
+        
+        Rx = makehgtform('xrotate',pi);
+        Ry = makehgtform('yrotate',pi);
+        
+        set(t2,'Matrix',Rx)
+        set(t3,'Matrix',Rx*Ry)
+        set(t4,'Matrix',Ry)
+        
+        colormap(jet(10))
+        axis equal
         
         % enable colorbar
         if ~strcmp(plot_mode,'mesh')
