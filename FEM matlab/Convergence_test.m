@@ -26,7 +26,6 @@ legend({ElmType{1},ElmType{2}},'FontSize',13)
 %% Convergence test
 
 
-return
 f = 0.3;
 meshType = 'Q4iso'
 for i = 1:10

@@ -133,7 +133,7 @@ end
         % Initialize k
         k = zeros(length(x_vec)*2);
         % If statement determines if triangle or square element
-        if mod(length(x_vec),3) ~= 0 %Rectangular element
+        if mod(length(x_vec),3) ~= 0 % Rectangular element
             % Get Gauss points and weights
             [GP,GPW] = Gauss(nGP);
             
@@ -148,15 +148,13 @@ end
                     
                     k = k + B'*Em*B*h*abs(J_det)*GPW(i)*GPW(j);
                 end
-            end
-            
+            end    
         else % Triangular element
             Int_points = [2/3, 1/6
-                1/6, 1/6
-                1/6, 2/3];
+                          1/6, 1/6
+                          1/6, 2/3];
             
-            GPW = [1/3, 1/3, 1/3];
-            
+            GPW = [1/3, 1/3, 1/3];  
             for i = 1:3
                 [B,J_det] = BmatMaster(meshType,x_vec,y_vec,Int_points(i,1),Int_points(i,2));
                 
@@ -164,6 +162,11 @@ end
             end
         end
     end
+
+
+
+
+
 
     function K = global_stiffness_matrix(elems,nodes,Em,h,ndof,nGP,meshType)
         % Assembles the global/structure stiffeness matrix K from element stiffness matrices
@@ -178,13 +181,8 @@ end
         %
         % OUTPUTS:
         %   K     = global stiffness matrix [ndof x ndof]
-        
-        
-        % develop this function from scratch
-        
-        K = zeros(ndof,ndof);
-        % K = spalloc(ndof,ndof,max_nonzero_entries) % this is better for large models.
-        
+
+        K = zeros(ndof,ndof);    
         for i = 1:size(elems,1)
             nod = elems(i,:);
             
@@ -199,9 +197,10 @@ end
             
             K(dof,dof) = K(dof,dof) + k;
             
-        end
-        
+        end 
     end
+
+
 
     function [GP,GPW] = Gauss(nGP)
         % Returns sampling points and weights for Gauss quadrature of order nGP
@@ -227,6 +226,7 @@ end
         GPW = w_l(nGP,1:nGP);
     end
 
+
     function [D,R] = solve(K,R,BC,Dconstrains,C)
         % solve FE problem, Cook eq. (2.7-3, 2.7-2b)
         % D = vector of displacements (both free and fixed)
@@ -237,8 +237,8 @@ end
         
         BC2 = cat(1,BC,false(size(C,1),1));
         
-        ConstraintMat = [K C';
-            C O];
+        ConstraintMat = [K C'
+                         C O];
         
         % Splitting global stiffness matrix
         K11 = ConstraintMat(~BC2,~BC2);
@@ -254,14 +254,13 @@ end
         
         % Calculating free deformations and forces
         Dx = K11\(Rc-K12*Dc);
-        
         Rx = K21*Dx + K22*Dc;
         
         % Filling D and R vector
         D = zeros(length(BC),1);
         R = zeros(length(BC),1);
         
-        D(~BC)=Dx(1:end-length(Q));
+        D(~BC) = Dx(1:end-length(Q));
         D(BC) = Dc;
         
         R(~BC) = Rc(1:end-length(Q));
@@ -269,6 +268,7 @@ end
         
         
     end
+
 
     function C = multi_constraints(elems,nodes,MC)
         test = [1 0 -1];
@@ -280,6 +280,7 @@ end
         end
         
     end
+
 
     function res = post_process(elems,nodes,D,Em,meshType)
         
@@ -489,6 +490,8 @@ end
         
     end
 
+
+
     function eta = estimate_error(res,elems,nodes,meshType)
         % Following cook 9.10
         
@@ -528,6 +531,9 @@ end
         eta  = e / (U + e);
         end
     end
+
+
+
 %% %%%%%%%%%%%%%%%%%% plotting functions %%%%%%%%%%%%%%%%%%%%%
 
     function init_plot(nodes)

@@ -1,0 +1,4 @@
+b = 30mm
+t = 3mm
+L_gauge = 100mm
+PMMA
