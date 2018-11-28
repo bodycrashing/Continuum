@@ -16,28 +16,28 @@ switch type
         % x_vec and y_vec = Vertical vectors containing coordinates of element nodes
         
         % Calculating the Jacobian matrix, eq 6.2-6 in cook
-        J1 = 1/4 * [-(1-eta) (1-eta) (1+eta) -(1+eta);
-            -(1-xi) -(1+xi)  (1+xi)   (1-xi)];
+        J1 = 1/4 * [-(1-eta) (1-eta) (1+eta) -(1+eta)
+                    -(1-xi) -(1+xi)  (1+xi)   (1-xi)];
         
         J = J1*cat(2,x,y);
         % Determinant of J
         J_det = det(J);
         % Finding inverse of J as this is needed to calculate B
-        I = inv(J);
+        gamma = inv(J);
         
         % Following the procedure from p. 208 in cook.
         % Multiplying together eq. 6.2-9 * 6.2-10 * 6.2-11 gives us the stress
         % strain relations, which is the B matrix.
-        B1 = [1 0 0 0;
-            0 0 0 1;
-            0 1 1 0] ;
+        B1 = [1 0 0 0
+              0 0 0 1
+              0 1 1 0] ;
         
-        B2 = blkdiag(I,I);
+        B2 = blkdiag(gamma,gamma);
         
         B3 = 1/4 * [-1+eta 0 1-eta 0 1+eta 0 -1-eta 0;
-            -1+xi  0 -1-xi 0 1+xi  0  1-xi  0;
-            0 -1+eta 0 1-eta 0 1+eta 0 -1-eta;
-            0 -1+xi  0 -1-xi 0 1+xi  0  1-xi];
+                    -1+xi  0 -1-xi 0 1+xi  0  1-xi  0;
+                    0 -1+eta 0 1-eta 0 1+eta 0 -1-eta;
+                    0 -1+xi  0 -1-xi 0 1+xi  0  1-xi];
         
         B = B1*B2*B3;
         
@@ -49,7 +49,7 @@ switch type
         r = xi;
         s = eta;
         
-        N = [1-r-s,r,s];
+        N = [1-r-s, r, s];
         
         A2 = (x(2)-x(1))*(y(3)-y(1))-(x(3)-x(1))*(y(2)-y(1));
         

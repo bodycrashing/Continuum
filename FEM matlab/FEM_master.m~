@@ -15,17 +15,17 @@ end
 
 
 %% %%%%%%%%%%%%%%%%%% define model %%%%%%%%%%%%%%%%%%%%%%%%%
-W  = 1;        % Unit zell widht and height [mm]
-rad  = 2*W*sqrt(f/(pi));        % Radius of hole [mm]
+W  = 0.5;        % Unit zell widht and height [mm]
+rad  = sqrt(f/(pi));        % Radius of hole [mm]
 h  = 1;         % model thickness
-%rad = 8/10*W;
+%rad = 9/10*W;
 nGP = 2;        % no. Gauss points
 
 % Material properties
 E  = 2230.6;    % Youngs modulus
 nu = 0.355;       % Poissons ratio
 
-D_forced = 1/W; %Forced displacement [mm]
+D_forced = 0.1; %Forced displacement [mm]
 
 %% %%%%%%%% Generate Mesh, Constraints and Loads %%%%%%%%%%%%%%%%%%%%%%%
 
@@ -39,13 +39,13 @@ MC = false(ndof,1);
 BC(find(nodes(:,1) == 0)*2-1) = 1; % Left side nodes
 BC(find(nodes(:,2) == 0)*2) = 1; % Bottom nodes
 %BC(find(nodes(:,1) == W)*2-1) = 1; % Right side nodes
-BC(find(nodes(:,2) == 1)*2) = 1; % Top nodes
+BC(find(nodes(:,2) == W)*2) = 1; % Top nodes
 % Forced displacements
 Dc = zeros(ndof,1);
-Dc(find(nodes(:,2) == 1)*2) = D_forced;
+Dc(find(nodes(:,2) == W)*2) = D_forced;
 
 % Multivariable constraints
-MC(find(nodes(:,1) == 1)*2-1) = 1; % =1 if on
+MC(find(nodes(:,1) == W)*2-1) = 1; % =1 if on
 %MC(find(nodes(:,1) == -1.5)*2-1) = 1; % =1 if on
 C = multi_constraints(elems,nodes,MC);
 
@@ -70,13 +70,13 @@ res = post_process(elems,nodes,D,Em,meshType);
 
 eta = estimate_error(res,elems,nodes,meshType);
 
-F_res = sum(R(find(nodes(:,2) == 1)*2));
+F_res = sum(R(find(nodes(:,2) == W)*2));
 
-D_y = (D(find(nodes(:,1) == 1,1)*2-1));
+D_y = (D(find(nodes(:,1) == W,1)*2-1));
 
-E_unitCell = (F_res)/(D_forced)
+E_unitCell = (F_res)/(D_forced);
 
-nu_unitCell = -D_y/D_forced
+nu_unitCell = -D_y/D_forced;
 
 
 for i = 1:length(res.element)
