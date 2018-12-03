@@ -74,13 +74,13 @@ F_res = sum(R(find(nodes(:,2) == 1)*2));
 
 D_y = (D(find(nodes(:,1) == 1,1)*2-1));
 
-E_unitCell = (F_res)/(D_forced)
+E_unitCell = (F_res)/(D_forced);
 
-nu_unitCell = -D_y/D_forced
+nu_unitCell = -D_y/D_forced;
 
 
 for i = 1:length(res.element)
-    Sig(:,i) = res.element(i).Se;
+    Sig(:,i) = res.element(i).Seavg;
 end
 SigmaVM_max = max(Sig(:));
 n_elems = length(elems);
@@ -93,11 +93,11 @@ if plotTF
     % (comment out what you don't need)
     init_plot(nodes); % always keep this one!
     plot_elements(elems,nodes)
-    %plot_elem_numbers(elems,nodes)
+    plot_elem_numbers(elems,nodes)
     %plot_elem_cs(elems,nodes)
     plot_nodes(nodes)
     plot_node_numbers(nodes)
-    %plot_dof_numbers(nodes)
+    plot_dof_numbers(nodes)
     plot_BCs(nodes,BC)
     plot_loads(nodes,P)
     %plot_dist_load(elems,nodes,poly,W)
@@ -161,10 +161,6 @@ end
     end
 
 
-
-
-
-
     function K = global_stiffness_matrix(elems,nodes,Em,h,ndof,nGP,meshType)
         % Assembles the global/structure stiffeness matrix K from element stiffness matrices
         %
@@ -196,7 +192,6 @@ end
             
         end 
     end
-
 
 
     function [GP,GPW] = Gauss(nGP)
@@ -307,34 +302,42 @@ end
                     1 -1;
                     1  1;
                     -1  1];
-                scale = sqrt(3);
+                scale = @(xi) xi/sqrt(3);
+                scale_inv = @(y) y*sqrt(3);
             elseif strcmp(meshType,'CSTiso') || strcmp(meshType,'LSTiso')
                 
+%                 c = [0,0;
+%                     1/2,0;
+%                     1,0;
+%                     1/2,1/2;
+%                     0,1;
+%                     0,1/2];
                 c = [0,0;
-                    1/2,0;
-                    1,0;
-                    1/2,1/2;
-                    0,1;
-                    0,1/2];
-                scale = 1;
+                     1,0;
+                     0,1;
+                     1/2,0;
+                     1/2,1/2;
+                     0,1/2];
+%                 scale = @(xi)  1/2 * xi + 1/6;
+%                 scale_inv = @(y) 2*y - 1/3;
+                    scale = @(xi) 1*xi;
+                    scale_inv = @(y) 1*y;
             end
             
             % loop over element nodes
             for j = 1:size(elems,2)
                 
                 % evaluate B matrix at node j
-                [B,~,~] = BmatMaster(meshType,x,y,scale*c(j,1),scale*c(j,2));
+                [B,~,N] = BmatMaster(meshType,x,y,scale(c(j,1)),scale(c(j,2)));
                 
-                % calculate strain and stress the simple way:
-                %eps   = B*d;
-                %sigma = Em*eps;
+                % calculate strain and stress:
                 epsGP(:,j)   = B*d;
                 sigmaGP(:,j) = Em*epsGP(:,j);
                 
             end
             
             for j = 1:size(elems,2)
-                [~,~,N] = BmatMaster(meshType,x,y,scale*c(j,1),scale*c(j,2));
+                [~,~,N] = BmatMaster(meshType,x,y,scale_inv(c(j,1)),scale_inv(c(j,2)));
                 
                 eps = N*epsGP';
                 sigma = N*sigmaGP';
@@ -687,7 +690,7 @@ end
     function plot_dof_numbers(nodes)
         
         for i = 1:size(nodes,1)
-            text(nodes(i,1)+1,nodes(i,2)-1,['(' num2str(i*2-1) ',' num2str(i*2) ')'],'color','b','fontsize',7);
+            text(nodes(i,1)+0.01,nodes(i,2)-0.01,['(' num2str(i*2-1) ',' num2str(i*2) ')'],'color','b','fontsize',7);
         end
         
     end
@@ -762,10 +765,15 @@ end
 
     function plot_displacement(elems,nodes,D,plot_mode)
         
+        if size(elems,2)==6
+            elems = elems(:,[1,4,2,5,3,6]);
+        end
+        
         % x/y dof numbers
         nn = length(nodes);
         x_dof = 1:2:nn*2;
         y_dof = 2:2:nn*2;
+        
         
         % pick out displacements for x- and y-dir, respectively
         UX = D(x_dof);
@@ -943,7 +951,7 @@ end
                 phi = eval(['res.nodal.' plot_mode]);
                 patch('faces',elems,'vertices',nodes,'facecolor','interp','FaceVertexCData',phi);
                 
-            case {'SX','SY','SXY','EX','EY','EXY' 'S1' 'S2' 'Seavg'} % element-based results
+            case {'SX','SY','SXY','EX','EY','EXY' 'S1' 'S2' 'Seavg','Se'} % element-based results
                 for i = 1:size(elems,1)
                     phi = eval(['res.element(i).' plot_mode]);
                     eface = 1:size(elems,2);
