@@ -1,12 +1,15 @@
+close all
 
-i = 8
-    nc = i*4;
+i = 9
+    nc = i*2;
     no = nc;
 
 %[nodes,elems] = Q4mesh_UnitCell(20,8,nc,no);
-[nodes,elems,ndof] = MeshMaster('Q4iso',1,0.4,nc,no);
+[nodes,elems,ndof] = MeshMaster('LSTiso',1,0.4,nc,no);
 
 plot(nodes(:,1),nodes(:,2),'o')
+
+%%
 hold on
 %test_x = reshape(nodes(:,1),nc+1,no+1);
 %test_y = reshape(nodes(:,2),nc+1,no+1);

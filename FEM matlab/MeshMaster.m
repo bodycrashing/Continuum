@@ -12,7 +12,14 @@ function [nodes,elems,ndof] = MeshMaster(type,W,R,nc,no)
 r = linspace(R,W,no+1)/W;
 % Vector containing node positions on boundary
 b = linspace(0,W,nc/2+1)/W;
-s_increase = 1.08; % Speed which the superelipse becomse square
+% Speed which the superelipse becomse square
+if nc > 19
+    s_increase = 1.08;
+else 
+    s_increase = -0.1785714286e-1 * nc + 1.407142857;
+end
+ 
+
 switch type
     case 'FuldPladeLST'
         [nodes,elems,ndof] = ImportMesh('LSTPlate_nodes2.txt','LSTPlate_elems2.txt');

@@ -1,9 +1,10 @@
 
 clc; close all; clear all
-nc = 4
-no = 2
+i = 9
+    nc = i*2;
+    no = nc;
 
-[res,E_unitCell,nu_unitCell,sigma_max_Q,n_elems_Q,eta] = FEM_master(0.3,'LSTiso',nc,no,true);
+[res,E_unitCell,nu_unitCell,sigma_max_Q,n_elems_Q,eta] = FEM_master(0.2,'LSTiso',nc,no,true);
 
 sigma_max_Q
 

@@ -36,6 +36,8 @@ nc = 1:n_max;
 no = nc;
 dofs = 2*(2*no+1).*(2*nc+1);
 
+
+%%
 figure
 hold on
 yyaxis left
@@ -44,7 +46,9 @@ plot(dofs,E_n(:,2),'b-^')
 plot(dofs,E_n(:,3),'g-x')
 xlabel('Degrees of Freedom')
 ylabel('$\bar{E}$')
-l = legend('CST','LST','Q4','Location','East');
+
+
+set(gca,{'ycolor'},{[0,0,0]})
 
 yyaxis right
 hold on
@@ -52,7 +56,9 @@ plot(dofs,nu_n(:,1),'k--o')
 plot(dofs,nu_n(:,2),'m--^')
 plot(dofs,nu_n(:,3),'y--x')
 ylabel('Poisson ratio $\nu$')
+l = legend('$\bar{E}$ CST','$\bar{E}$ LST','$\bar{E}$ Q4', '$\nu$ CST','$\nu$ LST','$\nu$ Q4','Location','East');
 
+set(gca,{'ycolor'},{[0,0,0]})
 
 figure
 hold on
