@@ -1,6 +1,6 @@
 
-nc = 16;
-no = 8;
+nc = 2;
+no = 1;
 
 %[nodes,elems] = Q4mesh_UnitCell(20,8,nc,no);
 [nodes,elems,ndof] = MeshMaster('LSTiso',1,0.4,nc,no);

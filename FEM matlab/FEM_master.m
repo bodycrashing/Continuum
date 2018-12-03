@@ -74,9 +74,9 @@ F_res = sum(R(find(nodes(:,2) == 1)*2));
 
 D_y = (D(find(nodes(:,1) == 1,1)*2-1));
 
-E_unitCell = (F_res)/(D_forced)
+E_unitCell = (F_res)/(D_forced);
 
-nu_unitCell = -D_y/D_forced
+nu_unitCell = -D_y/D_forced;
 
 
 for i = 1:length(res.element)

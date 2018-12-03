@@ -1,66 +1,68 @@
-clear; close all; clc
+clc; close all; clear 
+set(0, 'defaultTextInterpreter','latex')
+set(0, 'defaultAxesTickLabelInterpreter','latex');
+set(0, 'defaultLegendInterpreter','latex');
+set(0, 'defaultAxesFontSize',14);
 
-%% E_modulus test
-%f = [0,0.05,0.1,0.15,0.2,0.25,0.3,0.35];
-f = 0:0.025:pi/4;
-E_t  = 2230.6;
-ElmType = {'LSTiso','Q4iso'};
-for j = 1:length(ElmType)
-    for i = 1:length(f)
-    
-        [res,E_unitCell(i,j),nu_unitCell(i,j),sigma_max_Q,n_elems_Q] = FEM_master(f(i),ElmType{j},18,18,false);
+
+f = 0.2; % Porisity
+E0 = 2230.6;
+plotTF = false;
+meshtype = {'CSTiso','LSTiso','Q4iso'};
+
+n_max = 10;
+for i = 1:length(meshtype)
+    mesh = meshtype{i};
+    for j = 1:n_max
+        % A LST-element always has twice as many dofs as a CST or Q4. Consequently the loop
+        % must run over half the nubmer of total elements if one wants to compare
+        % element proformance for the same number of dofs.
+        if strcmp(mesh,'LSTiso')
+            nc = 2*j;
+            no = nc;
+        else
+            nc = 4*j;
+            no = nc;
+        end
         
+        [~,E,nu,SigmaVM_max,n_elems,eta] = FEM_master(f,mesh,nc,no,plotTF,mesh);
+        E_n(j,i) = E;
+        nu_n(j,i) = nu;
+        SigmaVM_max_n(j,i) = SigmaVM_max;
+        eta_n(j,i) = eta;       
     end
 end
-subplot(2,1,1)
-plot(f,E_unitCell(:,1)/E_t,'r',f,E_unitCell(:,2)/E_t)
-xlabel('Porosity')
-ylabel('Youngs modulus')
-legend({ElmType{1},ElmType{2}},'FontSize',13)
+nc = 1:n_max;
+no = nc;
+dofs = 2*(2*no+1).*(2*nc+1);
 
-subplot(2,1,2)
-plot(f,nu_unitCell(:,1),'r',f,nu_unitCell(:,2))
-xlabel('Porosity')
-ylabel('Poissons ratio')
-legend({ElmType{1},ElmType{2}},'FontSize',13)
-%% Convergence test
-
-
-f = 0.3;
-meshType = 'Q4iso'
-for i = 1:10
-
-    nc = i*4;
-    no = nc;
-     
-    [res,E_unitCell,nu_unitCell,sigma_max_Q(i),n_elems_Q(i)] = FEM_master(f,meshType,nc,no,false);
-end
-
-    meshType = 'CSTiso'
-for i = 1:10
-
-    nc = i*2;
-    no = nc;
-     
-    [res,E_unitCell,nu_unitCell,sigma_max_C(i),n_elems_C(i)] = FEM_master(f,meshType,nc,no,false);
-end
-
-    meshType = 'LSTiso'
-for i = 1:6
-
-    nc = 2*i;
-    no = nc;
-     
-    [res,E_unitCell,nu_unitCell,sigma_max_L(i),n_elems_L(i)] = FEM_master(f,meshType,nc,no,false);
-end
-
-%%
-semilogx(1./n_elems_Q(:),sigma_max_Q(:))
+figure
 hold on
-semilogx(1./n_elems_C(:),sigma_max_C(:))
-semilogx(1./n_elems_L(:),sigma_max_L(:))
-hold off
-legend('Q4','CST','LST')
-xlabel('Element size')
-ylabel('Max von Mises stress')
+yyaxis left
+plot(dofs,E_n(:,1),'r-o')
+plot(dofs,E_n(:,2),'b-^')
+plot(dofs,E_n(:,3),'g-x')
+xlabel('Degrees of Freedom')
+ylabel('$\bar{E}$')
+l = legend('CST','LST','Q4','Location','East');
+
+yyaxis right
+hold on
+plot(dofs,nu_n(:,1),'k--o')
+plot(dofs,nu_n(:,2),'m--^')
+plot(dofs,nu_n(:,3),'y--x')
+ylabel('Poisson ratio $\nu$')
+
+
+figure
+hold on
+plot(dofs,SigmaVM_max_n(:,1),'r--o')
+plot(dofs,SigmaVM_max_n(:,2),'b--^')
+plot(dofs,SigmaVM_max_n(:,3),'g--x')
+xlabel('Degrees of Freedom')
+ylabel('$\sigma_{von}$')
+legend('CST','LST','Q4');
+
+
+
 
