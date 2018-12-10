@@ -69,6 +69,13 @@ xlabel('Degrees of Freedom')
 ylabel('$\sigma_{von}$')
 legend('CST','LST','Q4');
 
-
+figure
+hold on
+plot(dofs,eta_n(:,1),'r--o')
+plot(dofs,eta_n(:,2),'b--^')
+plot(dofs,eta_n(:,3),'g--x')
+xlabel('Degrees of Freedom')
+ylabel('$\eta$')
+legend('CST','LST','Q4');
 
 

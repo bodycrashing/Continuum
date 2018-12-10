@@ -4,7 +4,7 @@ clear; close all; clc
 %f = [0,0.05,0.1,0.15,0.2,0.25,0.3,0.35];
 f = 0:0.025:pi/4;
 E_t  = 2230.6;
-ElmType = {'LSTiso','Q4iso'};
+ElmType = {'LSTiso'};
 for j = 1:length(ElmType)
     for i = 1:length(f)
     
